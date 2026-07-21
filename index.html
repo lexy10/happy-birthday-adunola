@@ -22,7 +22,8 @@
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { height: 100%; overflow-x: hidden; }
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { overflow-x: hidden; }
 
   body {
     font-family: 'Poppins', sans-serif;
@@ -30,9 +31,13 @@
     background: radial-gradient(1200px 800px at 20% 10%, #2a1152 0%, transparent 60%),
                 radial-gradient(1000px 700px at 85% 90%, #3a0f4f 0%, transparent 55%),
                 linear-gradient(160deg, #140a2e 0%, #1e0b3a 45%, #2a0f45 100%);
-    background-attachment: fixed;
+    /* NOTE: no background-attachment:fixed — it makes mobile scrolling stutter.
+       The fixed video/overlay layers already provide the parallax backdrop. */
+    background-color: #170a30; /* fallback so nothing shows through while scrolling */
     min-height: 100vh;
+    min-height: 100dvh;
     position: relative;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* ------- Faint background video ------- */
@@ -41,6 +46,7 @@
     object-fit: cover; z-index: 0; opacity: 0;
     transition: opacity 1.4s ease; pointer-events: none;
     filter: saturate(1.15) contrast(1.02);
+    transform: translateZ(0); backface-visibility: hidden; /* own GPU layer → no repaint on scroll */
   }
   .bg-video.ready { opacity: .24; }
   .bg-video-overlay {
@@ -66,13 +72,14 @@
   }
 
   /* ------- tsParticles + confetti canvases ------- */
-  #tsparticles { position: fixed; inset: 0; z-index: 1; }
+  #tsparticles { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
   #confetti-canvas { position: fixed; inset: 0; z-index: 40; pointer-events: none; }
 
   /* ------- Layout ------- */
   .stage {
     position: relative; z-index: 10;
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     text-align: center;
@@ -112,9 +119,15 @@
   }
   @keyframes shine { to { background-position: 220% center; } }
 
-  /* letters wrapper for GSAP reveal — inherit the gradient so each glyph is painted */
+  /* letters wrapper for GSAP reveal — inherit the gradient so each glyph is painted.
+     The vertical padding gives tall script ascenders/descenders room so the gradient
+     fill covers the whole glyph (otherwise the top of letters like 'd' gets clipped). */
   .name .ltr {
     display: inline-block; will-change: transform, opacity;
+    /* Big paint box so tall script ascenders/descenders are fully covered by the
+       gradient; negative margins cancel the layout impact so spacing stays tight. */
+    padding: .5em 0 .4em;
+    margin: -.5em 0 -.4em;
     background: inherit;
     -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent; color: transparent;
@@ -122,7 +135,7 @@
   .name .ltr.space { width: .22em; }
 
   .subtitle {
-    margin-top: 1.4rem;
+    margin-top: 0.4rem;
     font-weight: 300;
     font-size: clamp(.95rem, 2.2vw, 1.25rem);
     color: rgba(255,255,255,.82);
@@ -150,7 +163,7 @@
   .photo .monogram { font-family: 'Great Vibes', cursive; font-size: 4.6rem; color: var(--gold); }
 
   /* ------- Buttons ------- */
-  .actions { margin-top: 2.6rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; opacity: 0; }
+  .actions { margin-top: 1.4rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; opacity: 0; }
   .btn {
     font-family: 'Poppins', sans-serif; font-weight: 500;
     font-size: .95rem; letter-spacing: .02em;
@@ -218,7 +231,7 @@
   }
 
   /* ------- Cake ------- */
-  .cake-wrap { margin-top: 3.4rem; opacity: 0; transform: translateY(20px); }
+  .cake-wrap { margin-top: 1.6rem; opacity: 0; transform: translateY(20px); }
   .cake { position: relative; width: 250px; height: 210px; margin: 0 auto; cursor: pointer; }
 
   .cake-glow {
@@ -361,6 +374,25 @@
     .name { line-height: 1; }
     .actions { gap: .7rem; }
     .btn { padding: .8rem 1.4rem; font-size: .85rem; }
+    /* Smaller photo + cake on phones */
+    .photo-wrap { width: 118px; height: 118px; margin-bottom: 1rem; }
+    .photo .monogram { font-size: 3.3rem; }
+    .cake { zoom: .78; }
+  }
+
+  /* ------- Mobile: keep scrolling buttery-smooth ------- */
+  @media (max-width: 820px) {
+    /* A continuously-animated full-screen blur is the #1 mobile scroll killer —
+       freeze it so it composites once instead of repainting every frame. */
+    .aurora { animation: none; filter: blur(26px); }
+    /* Cheaper drop-shadows/filters while scrolling. */
+    .name { filter: none; }
+    .bg-video { filter: none; }
+    /* Fewer heavy backdrop-blurs on mobile. */
+    .btn.ghost { backdrop-filter: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .aurora, .photo-ring, .name { animation: none; }
   }
 </style>
 </head>
@@ -458,12 +490,20 @@
   };
   /* ===================================================================== */
 
-  /* ============ 0. Pointer-reactive aurora ============ */
+  // Detect touch/small screens, to lighten effects for smooth scrolling.
+  // (pointer:coarse is the reliable touch-device signal; width covers small windows.)
+  const isMobile = window.matchMedia('(pointer: coarse)').matches
+    || window.matchMedia('(max-width: 820px)').matches
+    || navigator.maxTouchPoints > 0;
+
+  /* ============ 0. Pointer-reactive aurora (desktop only) ============ */
   const aurora = document.querySelector('.aurora');
-  window.addEventListener('pointermove', e => {
-    aurora.style.setProperty('--mx', (e.clientX / innerWidth * 100) + '%');
-    aurora.style.setProperty('--my', (e.clientY / innerHeight * 100) + '%');
-  });
+  if (!isMobile) {
+    window.addEventListener('pointermove', e => {
+      aurora.style.setProperty('--mx', (e.clientX / innerWidth * 100) + '%');
+      aurora.style.setProperty('--my', (e.clientY / innerHeight * 100) + '%');
+    });
+  }
 
   /* ============ 1. Split name into animated letters ============ */
   const nameEl = document.getElementById('name');
@@ -575,8 +615,8 @@
     balloonLayer.appendChild(b);
     setTimeout(() => b.remove(), dur * 1000);
   }
-  for (let i = 0; i < 6; i++) setTimeout(spawnBalloon, i * 900);
-  setInterval(spawnBalloon, 2200);
+  for (let i = 0; i < (isMobile ? 3 : 6); i++) setTimeout(spawnBalloon, i * 900);
+  setInterval(spawnBalloon, isMobile ? 4200 : 2200);
 
   /* ---- Cake sprinkles ---- */
   const sprinkleColors = ['#ff5c8a', '#6bd6ff', '#a86bff', '#ffd84d', '#37d68f', '#ffffff'];
@@ -605,7 +645,7 @@
     heartLayer.appendChild(h);
     setTimeout(() => h.remove(), dur * 1000);
   }
-  setInterval(spawnHeart, 2600);
+  setInterval(spawnHeart, isMobile ? 4600 : 2600);
   setTimeout(spawnHeart, 1200);
 
   /* ---- Faint background video, plays continuously with its own audio ---- */
@@ -656,19 +696,20 @@
   tsParticles.load({
     id: 'tsparticles',
     options: {
-      fpsLimit: 60,
+      fpsLimit: isMobile ? 30 : 60,           // lighter frame budget on phones
       fullScreen: { enable: false },
       particles: {
-        number: { value: 70, density: { enable: true, area: 900 } },
+        number: { value: isMobile ? 28 : 70, density: { enable: true, area: 900 } },
         color: { value: ['#ffffff', '#f9d976', '#ff7eb3', '#a86bff'] },
         shape: { type: ['circle', 'star'] },
         opacity: { value: { min: 0.2, max: 0.9 }, animation: { enable: true, speed: 1, sync: false } },
         size: { value: { min: 0.6, max: 3 } },
         move: { enable: true, speed: 0.6, direction: 'top', outModes: { default: 'out' }, random: true },
-        twinkle: { particles: { enable: true, frequency: 0.06, opacity: 1 } }
+        twinkle: { particles: { enable: !isMobile, frequency: 0.06, opacity: 1 } }
       },
       interactivity: {
-        events: { onHover: { enable: true, mode: 'bubble' } },
+        // No hover interactivity on touch devices — it just competes with scrolling.
+        events: { onHover: { enable: !isMobile, mode: 'bubble' } },
         modes: { bubble: { distance: 140, size: 5, duration: 2, opacity: 1 } }
       },
       detectRetina: true
