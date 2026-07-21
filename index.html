@@ -76,7 +76,7 @@
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
     text-align: center;
-    padding: 3vh 5vw;
+    padding: 6vh 5vw;
   }
 
   .eyebrow {
@@ -86,7 +86,7 @@
     font-weight: 400;
     color: var(--gold);
     opacity: 0; /* animated in */
-    margin-bottom: .8rem;
+    margin-bottom: 1.4rem;
     padding-left: .55em;
   }
 
@@ -100,7 +100,7 @@
 
   .name {
     font-family: 'Great Vibes', cursive;
-    font-size: clamp(3.8rem, 12vw, 7rem);
+    font-size: clamp(4.5rem, 16vw, 12rem);
     line-height: .95;
     background: linear-gradient(100deg, #fff3c4 0%, var(--gold) 25%, #fff 50%, var(--rose) 72%, var(--violet) 100%);
     background-size: 220% auto;
@@ -122,9 +122,9 @@
   .name .ltr.space { width: .22em; }
 
   .subtitle {
-    margin-top: .85rem;
+    margin-top: 1.4rem;
     font-weight: 300;
-    font-size: clamp(.9rem, 2.2vw, 1.15rem);
+    font-size: clamp(.95rem, 2.2vw, 1.25rem);
     color: rgba(255,255,255,.82);
     max-width: 620px;
     opacity: 0;
@@ -132,7 +132,7 @@
   .subtitle b { color: var(--gold); font-weight: 500; }
 
   /* ------- Photo ------- */
-  .photo-wrap { position: relative; width: 116px; height: 116px; margin: 0 auto .9rem; opacity: 0; }
+  .photo-wrap { position: relative; width: 158px; height: 158px; margin: 0 auto 1.6rem; opacity: 0; }
   .photo-ring {
     position: absolute; inset: -6px; border-radius: 50%;
     background: conic-gradient(from 0deg, var(--gold), var(--rose), var(--violet), var(--sky), var(--gold));
@@ -147,26 +147,10 @@
     border: 3px solid rgba(16,8,32,.95);
   }
   .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .photo .monogram { font-family: 'Great Vibes', cursive; font-size: 3.4rem; color: var(--gold); }
+  .photo .monogram { font-family: 'Great Vibes', cursive; font-size: 4.6rem; color: var(--gold); }
 
-  /* ------- Countdown ------- */
-  .countdown { display: flex; gap: .7rem; justify-content: center; flex-wrap: wrap; margin-top: 1.1rem; opacity: 0; }
-  .cd-tile {
-    min-width: 76px; padding: .85rem .7rem; border-radius: 16px;
-    background: var(--glass); border: 1px solid rgba(255,255,255,.16);
-    backdrop-filter: blur(8px);
-    box-shadow: 0 12px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.22);
-  }
-  .cd-num {
-    font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.9rem;
-    color: #fff; line-height: 1; font-variant-numeric: tabular-nums;
-  }
-  .cd-label { margin-top: .4rem; font-size: .6rem; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); }
-  .countdown-done { font-family: 'Great Vibes', cursive; font-size: clamp(1.7rem,4.5vw,2.3rem); color: var(--gold); }
-
-  /* ------- Age candles ------- */
   /* ------- Buttons ------- */
-  .actions { margin-top: 1.3rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; opacity: 0; }
+  .actions { margin-top: 2.6rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; opacity: 0; }
   .btn {
     font-family: 'Poppins', sans-serif; font-weight: 500;
     font-size: .95rem; letter-spacing: .02em;
@@ -234,7 +218,7 @@
   }
 
   /* ------- Cake ------- */
-  .cake-wrap { margin-top: 1.2rem; opacity: 0; transform: translateY(20px); }
+  .cake-wrap { margin-top: 3.4rem; opacity: 0; transform: translateY(20px); }
   .cake { position: relative; width: 250px; height: 210px; margin: 0 auto; cursor: pointer; }
 
   .cake-glow {
@@ -337,7 +321,7 @@
     100% { opacity:0; transform:translateX(-60%) translateY(-46px) scaleX(2.4); }
   }
 
-  .cake-hint { margin-top: .8rem; font-size: .82rem; color: rgba(255,255,255,.6); letter-spacing: .04em; }
+  .cake-hint { margin-top: 1.3rem; font-size: .85rem; color: rgba(255,255,255,.6); letter-spacing: .04em; }
 
   /* ------- Wish overlay ------- */
   .wish {
@@ -405,8 +389,6 @@
       laughter, and every beautiful thing you deserve. 🎉
     </p>
 
-    <div class="countdown" id="countdown"></div>
-
     <div class="actions" id="actions">
       <button class="btn" id="wishBtn">💌 Read your wish</button>
     </div>
@@ -471,11 +453,8 @@
      ===================================================================== */
   const CONFIG = {
     name: 'Adunola',
-    age: 30,                            // ← her new age (number of candles)
-    birthday: '2026-07-22T00:00:00',   // ← her birthday date/time (countdown target)
-    photo: 'adun1.jpg',              // ← drop her photo in this folder with this name
-    video: 'adun2.mp4',           // ← optional: drop a video here for a faint moving backdrop ('' to disable)
-    music: 'song.mp3'             // ← optional: drop a song here to play instead of the built-in tune ('' to use the tune)
+    photo: 'adun1.jpg',   // ← her photo (drop this file in the same folder)
+    video: 'adun2.mp4'    // ← background video with sound ('' to disable)
   };
   /* ===================================================================== */
 
@@ -559,10 +538,8 @@
         stagger: { each: .06, from: 'center' }, duration: .9, ease: 'back.out(1.7)'
       }, '-=.2')
     .to('#subtitle', { opacity: 1, y: 0, duration: .8, startAt: { y: 14 } }, '-=.3')
-    .to('#countdown', { opacity: 1, y: 0, duration: .7, startAt: { y: 14 } }, '-=.3')
     .to('#actions', { opacity: 1, y: 0, duration: .7, startAt: { y: 14 } }, '-=.4')
     .to('#cakeWrap', { opacity: 1, y: 0, duration: .8 }, '-=.3')
-    .to('#age', { opacity: 1, y: 0, duration: .7, startAt: { y: 14 } }, '-=.4')
     .add(() => burst());
 
   /* floating idle animation on the name letters */
@@ -631,25 +608,35 @@
   setInterval(spawnHeart, 2600);
   setTimeout(spawnHeart, 1200);
 
-  /* ---- Faint background video, plays continuously with sound ---- */
+  /* ---- Faint background video, plays continuously with its own audio ---- */
   const bgVideo = document.getElementById('bgVideo');
   if (CONFIG.video) {
+    let soundOn = false;
     bgVideo.src = CONFIG.video;
+    bgVideo.loop = true;
     bgVideo.volume = 0.85;
     bgVideo.addEventListener('canplay', () => bgVideo.classList.add('ready'));
     bgVideo.addEventListener('error', () => { bgVideo.style.display = 'none'; });
-    // Try to autoplay muted first (browsers allow that), then unmute on the first user gesture.
-    bgVideo.muted = true;
-    const p = bgVideo.play();
-    if (p && p.catch) p.catch(() => {});
-    function enableSound() {
-      bgVideo.muted = false;
+
+    // 1) Try to play WITH sound right away.
+    bgVideo.muted = false;
+    bgVideo.play().then(() => { soundOn = true; }).catch(() => {
+      // 2) Browser blocked unmuted autoplay → keep it playing silently for now.
+      bgVideo.muted = true;
       bgVideo.play().catch(() => {});
-      window.removeEventListener('pointerdown', enableSound);
-      window.removeEventListener('keydown', enableSound);
+    });
+
+    // 3) Unlock sound on the very first interaction (the reliable path).
+    function unlockSound() {
+      if (soundOn) return;
+      bgVideo.muted = false;
+      bgVideo.play().then(() => { soundOn = true; }).catch(() => {});
     }
-    window.addEventListener('pointerdown', enableSound);
-    window.addEventListener('keydown', enableSound);
+    ['pointerdown', 'touchstart', 'keydown', 'click'].forEach(ev =>
+      window.addEventListener(ev, unlockSound, { passive: true }));
+
+    // 4) Best-effort: simulate a click on the video to nudge autoplay.
+    setTimeout(() => { try { bgVideo.click(); unlockSound(); } catch (e) {} }, 400);
   } else {
     bgVideo.style.display = 'none';
   }
@@ -664,31 +651,6 @@
     monogram.textContent = (CONFIG.name || 'A').charAt(0).toUpperCase();
   };
   if (CONFIG.photo) photoImg.src = CONFIG.photo; else photoImg.onerror();
-
-  /* ---- Countdown to the big day ---- */
-  const cdEl = document.getElementById('countdown');
-  const target = new Date(CONFIG.birthday).getTime();
-  let cdReached = false;
-  const pad = n => String(n).padStart(2, '0');
-  function renderCountdown() {
-    const diff = target - Date.now();
-    if (isNaN(target)) { cdEl.style.display = 'none'; return; }
-    if (diff <= 0) {
-      cdEl.innerHTML = '<div class="countdown-done">🎉 Your big day is finally here! 🎉</div>';
-      if (!cdReached) { cdReached = true; fireworks(3200); }
-      return;
-    }
-    const d = Math.floor(diff / 86400000);
-    const h = Math.floor(diff % 86400000 / 3600000);
-    const m = Math.floor(diff % 3600000 / 60000);
-    const s = Math.floor(diff % 60000 / 1000);
-    const tiles = [[d, 'Days'], [h, 'Hours'], [m, 'Minutes'], [s, 'Seconds']];
-    cdEl.innerHTML = tiles.map(([v, l]) =>
-      `<div class="cd-tile"><div class="cd-num">${l === 'Days' ? v : pad(v)}</div><div class="cd-label">${l}</div></div>`
-    ).join('');
-  }
-  renderCountdown();
-  setInterval(renderCountdown, 1000);
 
   /* ============ 5. tsParticles sparkle field ============ */
   tsParticles.load({
