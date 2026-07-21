@@ -105,34 +105,23 @@
     margin-bottom: .3rem;
   }
 
-  .name {
-    font-family: 'Great Vibes', cursive;
-    font-size: clamp(4.5rem, 16vw, 12rem);
-    line-height: .95;
-    background: linear-gradient(100deg, #fff3c4 0%, var(--gold) 25%, #fff 50%, var(--rose) 72%, var(--violet) 100%);
-    background-size: 220% auto;
-    -webkit-background-clip: text; background-clip: text;
-    -webkit-text-fill-color: transparent; color: transparent;
+  /* ------- Name -------
+     Rendered as SVG text with a gradient fill. SVG draws the whole glyph (ascenders
+     and all) with no `background-clip: text` involved, so it renders identically in
+     Chrome, Firefox and Safari — no clipped 'd'. */
+  .name-svg {
+    display: block;
+    width: min(80vw, 450px);
+    height: auto;
+    /* negative margins reach into the SVG's built-in whitespace to tighten the gaps;
+       bottom is pulled in more than the top */
+    margin: -.4rem auto -1.1rem;
+    overflow: visible;
     filter: drop-shadow(0 6px 30px rgba(255, 190, 120, .35));
-    animation: shine 6s linear infinite;
-    padding: 0 .1em .12em;
   }
-  @keyframes shine { to { background-position: 220% center; } }
-
-  /* letters wrapper for GSAP reveal — inherit the gradient so each glyph is painted.
-     The vertical padding gives tall script ascenders/descenders room so the gradient
-     fill covers the whole glyph (otherwise the top of letters like 'd' gets clipped). */
-  .name .ltr {
-    display: inline-block; will-change: transform, opacity;
-    /* Big paint box so tall script ascenders/descenders are fully covered by the
-       gradient; negative margins cancel the layout impact so spacing stays tight. */
-    padding: .5em 0 .4em;
-    margin: -.5em 0 -.4em;
-    background: inherit;
-    -webkit-background-clip: text; background-clip: text;
-    -webkit-text-fill-color: transparent; color: transparent;
+  .name-svg text {
+    font-family: 'Great Vibes', cursive;
   }
-  .name .ltr.space { width: .22em; }
 
   .subtitle {
     margin-top: 0.4rem;
@@ -371,7 +360,7 @@
   @keyframes fadeHint { to { opacity: 1; } }
 
   @media (max-width: 560px) {
-    .name { line-height: 1; }
+    /* keep line-height > 1 here too, so the 'd' ascender isn't clipped on phones */
     .actions { gap: .7rem; }
     .btn { padding: .8rem 1.4rem; font-size: .85rem; }
     /* Smaller photo + cake on phones */
@@ -386,13 +375,13 @@
        freeze it so it composites once instead of repainting every frame. */
     .aurora { animation: none; filter: blur(26px); }
     /* Cheaper drop-shadows/filters while scrolling. */
-    .name { filter: none; }
+    .name-svg { filter: none; }
     .bg-video { filter: none; }
     /* Fewer heavy backdrop-blurs on mobile. */
     .btn.ghost { backdrop-filter: none; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .aurora, .photo-ring, .name { animation: none; }
+    .aurora, .photo-ring { animation: none; }
   }
 </style>
 </head>
@@ -415,7 +404,22 @@
 
     <p class="eyebrow" id="eyebrow">A little celebration for someone special</p>
     <h1 class="headline" id="headline">Happy Birthday,</h1>
-    <div class="name" id="name" aria-label="Adunola">Adunola</div>
+    <svg class="name-svg" id="nameSvg" viewBox="0 0 800 260" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Adunola">
+      <defs>
+        <linearGradient id="nameGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0"    stop-color="#fff3c4" />
+          <stop offset="0.25" stop-color="#f9d976" />
+          <stop offset="0.5"  stop-color="#ffffff" />
+          <stop offset="0.72" stop-color="#ff7eb3" />
+          <stop offset="1"    stop-color="#a86bff" />
+          <!-- gentle shimmer: small horizontal sweep that keeps every colour visible -->
+          <animateTransform attributeName="gradientTransform" type="translate"
+            values="-0.12 0; 0.12 0; -0.12 0" dur="6s" repeatCount="indefinite" />
+        </linearGradient>
+      </defs>
+      <text id="nameText" x="400" y="130" text-anchor="middle" dominant-baseline="middle"
+            fill="url(#nameGrad)" font-size="200">Adunola</text>
+    </svg>
     <p class="subtitle" id="subtitle">
       Another trip around the sun, <b>Adunola</b> — may this year overflow with joy,
       laughter, and every beautiful thing you deserve. 🎉
@@ -505,16 +509,23 @@
     });
   }
 
-  /* ============ 1. Split name into animated letters ============ */
-  const nameEl = document.getElementById('name');
-  const text = nameEl.textContent.trim();
-  nameEl.textContent = '';
-  [...text].forEach(ch => {
-    const s = document.createElement('span');
-    s.className = 'ltr';
-    s.textContent = ch;
-    nameEl.appendChild(s);
-  });
+  /* ============ 1. Name (SVG) — set the text and fit the viewBox to the glyphs ============ */
+  const nameSvg = document.getElementById('nameSvg');
+  const nameText = document.getElementById('nameText');
+  nameText.textContent = CONFIG.name || 'Adunola';
+  nameSvg.setAttribute('aria-label', CONFIG.name || 'Adunola');
+  function fitNameViewBox() {
+    try {
+      const b = nameText.getBBox();               // tight box around the actual glyph ink
+      const pad = b.height * 0.06;                 // a little breathing room
+      nameSvg.setAttribute('viewBox',
+        `${b.x - pad} ${b.y - pad} ${b.width + pad * 2} ${b.height + pad * 2}`);
+    } catch (e) { /* getBBox can throw if not yet rendered — the fonts.ready call retries */ }
+  }
+  fitNameViewBox();                               // first pass (may use fallback font)
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(fitNameViewBox);    // re-fit once Great Vibes has loaded
+  }
 
   /* ============ 2. Confetti helpers ============ */
   // Keep the confetti canvas buffer matched to the viewport so origins map full-width.
@@ -573,20 +584,18 @@
   tl.to('#photoWrap', { opacity: 1, scale: 1, duration: .9, startAt: { scale: .75 }, ease: 'back.out(1.6)' })
     .to('#eyebrow', { opacity: 1, y: 0, duration: .8, startAt: { y: 12 } }, '-=.4')
     .from('#headline', { opacity: 0, y: 20, duration: .7 }, '-=.3')
-    .from('.name .ltr', {
-        opacity: 0, y: 60, rotateX: -90, scale: .4,
-        stagger: { each: .06, from: 'center' }, duration: .9, ease: 'back.out(1.7)'
+    .from('#nameSvg', {
+        opacity: 0, y: 44, scale: .78, transformOrigin: '50% 50%',
+        duration: .95, ease: 'back.out(1.5)'
       }, '-=.2')
     .to('#subtitle', { opacity: 1, y: 0, duration: .8, startAt: { y: 14 } }, '-=.3')
     .to('#actions', { opacity: 1, y: 0, duration: .7, startAt: { y: 14 } }, '-=.4')
     .to('#cakeWrap', { opacity: 1, y: 0, duration: .8 }, '-=.3')
     .add(() => burst());
 
-  /* floating idle animation on the name letters */
-  gsap.to('.name .ltr', {
-    y: -8, duration: 2, ease: 'sine.inOut',
-    stagger: { each: .12, from: 'start', yoyo: true, repeat: -1 },
-    delay: 3
+  /* gentle idle float on the name */
+  gsap.to('#nameSvg', {
+    y: -6, duration: 3, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: 3
   });
 
   /* gentle cake bob */
